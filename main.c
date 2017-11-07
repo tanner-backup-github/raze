@@ -36,25 +36,25 @@ void get_request(CURL *curl, const char *url, dumb_string *recv) {
 
 int main(void) {
 
-	curl_global_init(CURL_GLOBAL_ALL);
+	/* curl_global_init(CURL_GLOBAL_ALL); */
 	
-	CURL *curl = curl_easy_init();
+	/* CURL *curl = curl_easy_init(); */
 	
-	dumb_string s;
-        init_dumb_string(&s, "", 256);
-	get_request(curl, "https://razefiles.herokuapp.com/index", &s);
-	array *tokens = tokenize(s.data, s.len);
-	free_dumb_string(&s);
+	/* dumb_string s; */
+        /* init_dumb_string(&s, "", 256); */
+	/* get_request(curl, "https://razefiles.herokuapp.com/index", &s); */
+	/* array *tokens = tokenize(s.data, s.len); */
+	/* free_dumb_string(&s); */
 
-	for (size_t i = 0; i < tokens->size; ++i) {
-	        token *a = ((token **) tokens->elems)[i];
-		printf("%s\t%s\n", a->buf, token_type_strings[a->type]);
-	}
+	/* for (size_t i = 0; i < tokens->size; ++i) { */
+	/*         token *a = ((token **) tokens->elems)[i]; */
+	/* 	printf("%s\t%s\n", a->buf, token_type_strings[a->type]); */
+	/* } */
 
-	free_array(tokens);
-	free(tokens);
+	/* free_array(tokens); */
+	/* free(tokens); */
 	
-	curl_global_cleanup();
+	/* curl_global_cleanup(); */
 	
 	assert(glfwInit());
 	
@@ -113,22 +113,23 @@ int main(void) {
 	
 	GLfloat projm[] = IDENTITY_MATRIX;
 	ortho(projm, 0, WINDOW_WIDTH, 0, WINDOW_HEIGHT, -1, 1);
-
-	FT_Library ft;
-	FT_Init_FreeType(&ft);
-
-	FT_Face face;
-	FT_New_Face(ft, "OpenSans-Regular.ttf", 0, &face);
-	// @TODO: Invalid font sizes?
-	FT_Set_Pixel_Sizes(face, 0, 72);
-
-        size_t w, h;
-	GLuint tex_id = generate_text_texture("The Web Sucks.", face, &w, &h);
 	
 	glClearColor(0.92, 0.92, 0.92, 1.0);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
 	glfwSwapInterval(-1);
+
+	FT_Library ft;
+	FT_Init_FreeType(&ft);
+
+	Font *f = new_font(ft, "OpenSans-Regular.ttf", 64);
+
+	int32_t w = 0, h = 0;
+	GLuint tex_id = generate_text("The Web Sucks.", f, &w, &h);
+	
+	free_font(f);
+	
+	FT_Done_FreeType(ft);
 	
 	while (!glfwWindowShouldClose(window)) {
 	        float s = glfwGetTime();
@@ -141,7 +142,7 @@ int main(void) {
 		glBindVertexArray(VAO);
 		glUseProgram(text_shader);
 
-		{		
+		{
 			GLfloat modelm[] = IDENTITY_MATRIX;
 			model_matrix(modelm, WINDOW_WIDTH / 2 - w / 2, WINDOW_HEIGHT / 2 - h / 2, w, h, 0);
 		

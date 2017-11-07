@@ -13,6 +13,7 @@ typedef struct {
 } array;
 
 #define INIT_ARRAY(a, cap, elem_size) init_array_f((a), (cap), (elem_size), NULL)
+#define GET_ARRAY(a, i, type) ((type *) ((a)->elems))[i]
 
 void free_array(array *a) {
 	void (*ff)(void *) = a->free_elem ? a->free_elem : free;

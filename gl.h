@@ -1,10 +1,14 @@
 #ifndef GL_H__
 #define GL_H__
 
+#include <assert.h>
 #include <inttypes.h>
 #include <GL/glew.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "array.h"
 #include "file.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
@@ -17,55 +21,114 @@ GLuint make_buffer(GLenum target, const void *data, GLsizei size) {
 	return buf;
 }
 
+typedef struct {
+	uint8_t *buffer;
+        int32_t w, h;
+	int32_t bearingX, bearingY;
+	int32_t advanceX;
+} MyGlyph;
+
+typedef struct {
+        array glyphs;
+	size_t size;
+	// @NOTE: Prevent tails from getting cut off
+	int32_t tail_gap;
+} Font;
+
+void free_myglyph(MyGlyph *my_glyph) {
+	free(my_glyph->buffer);
+	free(my_glyph);
+}
+
+Font *new_font(FT_Library ft, const char *path, size_t size) {
+	FT_Face face;
+	assert(!FT_New_Face(ft, path, 0, &face));
+	// @TODO: Invalid font sizes?
+	FT_Set_Pixel_Sizes(face, 0, size);
+
+	Font *font = malloc(sizeof(*font));
+	font->size = size;
+	font->tail_gap = (face->ascender >> 6) + (face->descender >> 6);
+	
+	// @TODO: unicode
+	init_array_f(&font->glyphs, 128, sizeof(MyGlyph *), (void *) free_myglyph);
+	FT_GlyphSlot glyph = face->glyph;
+	for (int i = 0; i < 128; ++i) {
+		FT_Load_Char(face, i, FT_LOAD_RENDER);
+
+		MyGlyph *mg = malloc(sizeof(*mg));
+		mg->w = glyph->bitmap.width;
+		mg->h = glyph->bitmap.rows;
+		
+		mg->buffer = malloc(mg->w * mg->h);
+		memcpy(mg->buffer, glyph->bitmap.buffer, mg->w * mg->h);
+		
+		mg->bearingX = glyph->bitmap_left;
+		mg->bearingY = glyph->bitmap_top;
+		mg->advanceX = glyph->advance.x >> 6;
+		
+		add_array(&font->glyphs, mg);
+	}
+	
+	FT_Done_Face(face);
+	
+	return font;
+}
+
+void free_font(Font *f) {
+	free_array(&f->glyphs);
+	free(f);
+}
+
 // @TODO: unicode
 // @TODO: kerning
-// @TODO: compare sdl_ttf to this to see what else we need
-GLuint generate_text_texture(const char *text, FT_Face face, size_t *w, size_t *h) {
+GLuint generate_text(const char *text, Font *font, int32_t *w, int32_t *h) {
 	GLuint tex_id;
 	glGenTextures(1, &tex_id);
 	glBindTexture(GL_TEXTURE_2D, tex_id);
-	
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-        size_t text_len = strlen(text);
-	FT_GlyphSlot glyph = face->glyph;
-        size_t width = 0;
-        size_t base = 0;
-	for (size_t i = 0; i < text_len; ++i) {
-		FT_Load_Char(face, text[i], FT_LOAD_RENDER); // @TODO: !cache
-
-		width += glyph->advance.x >> 6;
-	        base = MAX(base, glyph->bitmap.rows);
+	int32_t width = 0;
+	int32_t height = 0;
+	int32_t base = 0;
+	for (size_t i = 0; text[i] != '\0'; ++i) {
+		char c = text[i];
+		MyGlyph *glyph = GET_ARRAY(&font->glyphs, c, MyGlyph *);
+		
+		width += glyph->advanceX;
+		height = MAX(height, glyph->h + (glyph->h - glyph->bearingY)); /* */
+		base = MAX(base, glyph->h);
 	}
+	height += font->tail_gap;
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height,
+		     0, GL_RED, GL_UNSIGNED_BYTE, NULL);
 	
-	// @NOTE: I am proud of this bad name, but it's really just a little extra bit
-	// of a gap so that glyphs with 'tails' are rendered in full
-	size_t mind_the_gap = (face->ascender >> 6) - (face->descender >> 6);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, base + mind_the_gap, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
-	
-	int32_t advx = 0;
-	for (size_t i = 0; i < text_len; ++i) {
-		FT_Load_Char(face, text[i], FT_LOAD_RENDER); // @TODO: !cache
-
-		glTexSubImage2D(GL_TEXTURE_2D, 0, advx, base - glyph->bitmap_top, glyph->bitmap.width, glyph->bitmap.rows,
-				GL_RED, GL_UNSIGNED_BYTE, glyph->bitmap.buffer);
-		advx += glyph->advance.x >> 6;
-	}
 	*w = width;
-	*h = base + mind_the_gap;
+	*h = height;
 
+	int advx = 0;
+	for (size_t i = 0; text[i] != '\0'; ++i) {
+		char c = text[i];
+		MyGlyph *glyph = GET_ARRAY(&font->glyphs, c, MyGlyph *);
+
+		glTexSubImage2D(GL_TEXTURE_2D, 0, advx + MAX(glyph->bearingX, 0), base - glyph->bearingY, glyph->w, glyph->h,
+				GL_RED, GL_UNSIGNED_BYTE, glyph->buffer);
+		advx += glyph->advanceX;
+	}
+	
 	return tex_id;
 }
 
-GLuint load_texture(const char *path, int *w, int *h) {
+GLuint load_texture(const char *path, int32_t *w, int32_t *h) {
         assert(w);
         assert(h);
 	int n;
+	// @TODO: maybe change back into ints
 	uint8_t *data = stbi_load(path, w, h, &n, 4);
 	
 	GLuint tex_id;
