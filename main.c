@@ -71,9 +71,10 @@ int main(void) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	const int WINDOW_WIDTH  = 1024;
-	const int WINDOW_HEIGHT = 768;
+	const int WINDOW_WIDTH  = 800;
+	const int WINDOW_HEIGHT = 600;
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
 	GLFWwindow *window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Raze",
 					      NULL, NULL);
 	assert(window);
@@ -104,7 +105,6 @@ int main(void) {
 	};
 	GLuint VBO = make_buffer(GL_ARRAY_BUFFER, vertices, sizeof(vertices));
 	GLuint IBO = make_buffer(GL_ELEMENT_ARRAY_BUFFER, indices, sizeof(indices));
-	(void) IBO;
 	
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
 			      NULL);
@@ -119,7 +119,7 @@ int main(void) {
 	
 	GLuint shader = make_shader_program("vs.glsl", "fs.glsl");
 	GLuint text_shader = make_shader_program("vs.glsl", "text_fs.glsl");
-	
+
 	GLfloat projm[] = IDENTITY_MATRIX;
 	ortho(projm, 0, WINDOW_WIDTH, 0, WINDOW_HEIGHT, -1, 1);
 	
@@ -131,7 +131,7 @@ int main(void) {
 	FT_Library ft;
 	FT_Init_FreeType(&ft);
 
-	Font *f = new_font(ft, "OpenSans-Regular.ttf", 96);
+	Font *f = new_font(ft, "OpenSans-Regular.ttf", 64);
 
 	int32_t w = 0, h = 0;
 	GLuint tex_id = generate_text("The Web Sucks.", f, &w, &h);
@@ -157,18 +157,17 @@ int main(void) {
 		{
 			GLfloat modelm[] = IDENTITY_MATRIX;
 			model_matrix(modelm, WINDOW_WIDTH / 2 - w / 2, 0, w, h, 0);
-		
+			
 			glBindTexture(GL_TEXTURE_2D, tex_id);
 		
 			glUniformMatrix4fv(glGetUniformLocation(shader, "proj"), 1, GL_FALSE, projm);
 			glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, modelm);
 		
-			glUniform4f(glGetUniformLocation(shader, "color"), 0.1, 0.5, 0.8, 1.0);
+			glUniform4f(glGetUniformLocation(shader, "color"), 0.7, 0.3, 0.8, 1.0);
 		
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
 		}
 
-		
 		{
 			GLfloat modelm[] = IDENTITY_MATRIX;
 			model_matrix(modelm, WINDOW_WIDTH / 2 - w2 / 2, h, w2, h2, 0);
@@ -178,7 +177,7 @@ int main(void) {
 			glUniformMatrix4fv(glGetUniformLocation(shader, "proj"), 1, GL_FALSE, projm);
 			glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, modelm);
 		
-			glUniform4f(glGetUniformLocation(shader, "color"), 0.1, 0.5, 0.8, 1.0);
+			glUniform4f(glGetUniformLocation(shader, "color"), 0.9, 0.3, 0.1, 1.0);
 		
 			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
 		}
@@ -194,6 +193,8 @@ int main(void) {
 	glDeleteTextures(1, &tex_id);
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &IBO);
+	glDeleteProgram(text_shader);
 	glDeleteProgram(shader);
 
 	glfwTerminate();

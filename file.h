@@ -12,7 +12,7 @@ char *read_entire_file(const char *path) {
 	rewind(f);
 	char *buf = calloc(fsize + 1, sizeof(char));
 	assert(buf);
-        size_t res = fread(buf, sizeof(char), fsize, f);
+        long res = fread(buf, sizeof(char), fsize, f);
 	(void) res;
 	fclose(f);
 	return buf;

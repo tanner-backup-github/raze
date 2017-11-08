@@ -104,8 +104,11 @@ GLuint generate_text(const char *text, Font *font, int32_t *w, int32_t *h) {
 		base = MAX(base, glyph->h);
 	}
 	height += font->tail_gap;
+
+	uint8_t *blank_for_artifacts = calloc(width * height, sizeof(uint8_t));
+	
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height,
-		     0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+		     0, GL_RED, GL_UNSIGNED_BYTE, blank_for_artifacts);
 	
 	*w = width;
 	*h = height;
