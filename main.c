@@ -28,33 +28,42 @@ void get_request(CURL *curl, const char *url, dumb_string *recv) {
 	assert(curl_easy_perform(curl) == CURLE_OK);
 }
 
-// @TODO: !!!! Cache glyphs
+#include "parser.h"
+// @TODO: memcpy array
 // @TODO: assert strdup
 // @TODO: safe_malloc, safe_realloc, NULL_FREE
 // @TODO: Custom allocator
-// @TODO: PUSH TO GIT NOW!!!!!!!!!!!!!!!!!!!!!!!!
+
+void eval(parse_node *root) {
+	printf("%s\n", root->token.buf);
+	if (root->children) {
+		for (size_t i = 0; i < root->children->size; ++i) {
+			eval(GET_ARRAY(root->children, i, parse_node *));
+		}
+	}
+}
 
 int main(void) {
-
-	/* curl_global_init(CURL_GLOBAL_ALL); */
 	
-	/* CURL *curl = curl_easy_init(); */
+	curl_global_init(CURL_GLOBAL_ALL);
 	
-	/* dumb_string s; */
-        /* init_dumb_string(&s, "", 256); */
-	/* get_request(curl, "https://razefiles.herokuapp.com/index", &s); */
-	/* array *tokens = tokenize(s.data, s.len); */
-	/* free_dumb_string(&s); */
-
-	/* for (size_t i = 0; i < tokens->size; ++i) { */
-	/*         token *a = ((token **) tokens->elems)[i]; */
-	/* 	printf("%s\t%s\n", a->buf, token_type_strings[a->type]); */
-	/* } */
-
-	/* free_array(tokens); */
-	/* free(tokens); */
+	CURL *curl = curl_easy_init();
 	
-	/* curl_global_cleanup(); */
+	dumb_string s;
+        init_dumb_string(&s, "", 512);
+	get_request(curl, "https://razefiles.herokuapp.com/code", &s);
+	array *tokens = tokenize(s.data, s.len);
+	free_dumb_string(&s);
+
+	parse_node *root = parse(tokens);
+	free_array(tokens);
+	free(tokens);
+
+	eval(root);
+
+	free_parse_nodes(root);
+	
+	curl_global_cleanup();
 	
 	assert(glfwInit());
 	
@@ -122,10 +131,13 @@ int main(void) {
 	FT_Library ft;
 	FT_Init_FreeType(&ft);
 
-	Font *f = new_font(ft, "OpenSans-Regular.ttf", 64);
+	Font *f = new_font(ft, "OpenSans-Regular.ttf", 96);
 
 	int32_t w = 0, h = 0;
 	GLuint tex_id = generate_text("The Web Sucks.", f, &w, &h);
+
+	int32_t w2 = 0, h2 = 0;
+	GLuint tex_id2 = generate_text("Let's Make It Better.", f, &w2, &h2);
 	
 	free_font(f);
 	
@@ -144,9 +156,24 @@ int main(void) {
 
 		{
 			GLfloat modelm[] = IDENTITY_MATRIX;
-			model_matrix(modelm, WINDOW_WIDTH / 2 - w / 2, WINDOW_HEIGHT / 2 - h / 2, w, h, 0);
+			model_matrix(modelm, WINDOW_WIDTH / 2 - w / 2, 0, w, h, 0);
 		
 			glBindTexture(GL_TEXTURE_2D, tex_id);
+		
+			glUniformMatrix4fv(glGetUniformLocation(shader, "proj"), 1, GL_FALSE, projm);
+			glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, modelm);
+		
+			glUniform4f(glGetUniformLocation(shader, "color"), 0.1, 0.5, 0.8, 1.0);
+		
+			glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+		}
+
+		
+		{
+			GLfloat modelm[] = IDENTITY_MATRIX;
+			model_matrix(modelm, WINDOW_WIDTH / 2 - w2 / 2, h, w2, h2, 0);
+		
+			glBindTexture(GL_TEXTURE_2D, tex_id2);
 		
 			glUniformMatrix4fv(glGetUniformLocation(shader, "proj"), 1, GL_FALSE, projm);
 			glUniformMatrix4fv(glGetUniformLocation(shader, "model"), 1, GL_FALSE, modelm);

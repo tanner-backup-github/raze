@@ -97,8 +97,7 @@ GLuint generate_text(const char *text, Font *font, int32_t *w, int32_t *h) {
 	int32_t height = 0;
 	int32_t base = 0;
 	for (size_t i = 0; text[i] != '\0'; ++i) {
-		char c = text[i];
-		MyGlyph *glyph = GET_ARRAY(&font->glyphs, c, MyGlyph *);
+		MyGlyph *glyph = GET_ARRAY(&font->glyphs, (int) text[i], MyGlyph *);
 		
 		width += glyph->advanceX;
 		height = MAX(height, glyph->h + (glyph->h - glyph->bearingY)); /* */
@@ -113,8 +112,7 @@ GLuint generate_text(const char *text, Font *font, int32_t *w, int32_t *h) {
 
 	int advx = 0;
 	for (size_t i = 0; text[i] != '\0'; ++i) {
-		char c = text[i];
-		MyGlyph *glyph = GET_ARRAY(&font->glyphs, c, MyGlyph *);
+		MyGlyph *glyph = GET_ARRAY(&font->glyphs, (int) text[i], MyGlyph *);
 
 		glTexSubImage2D(GL_TEXTURE_2D, 0, advx + MAX(glyph->bearingX, 0), base - glyph->bearingY, glyph->w, glyph->h,
 				GL_RED, GL_UNSIGNED_BYTE, glyph->buffer);
@@ -128,7 +126,6 @@ GLuint load_texture(const char *path, int32_t *w, int32_t *h) {
         assert(w);
         assert(h);
 	int n;
-	// @TODO: maybe change back into ints
 	uint8_t *data = stbi_load(path, w, h, &n, 4);
 	
 	GLuint tex_id;
