@@ -8,4 +8,4 @@ if [ "$1" == "DEBUG" ]; then
     valgrind ./main.o
 else
     ./main.o
-if
+fi
