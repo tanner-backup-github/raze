@@ -13,6 +13,7 @@
 #include "gl_math.h"
 #include "dumb_string.h"
 #include "tokenizer.h"
+#include "parser.h"
 
 void get_request(CURL *curl, const char *url, dumb_string *recv) {
 	size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata) {
@@ -28,18 +29,22 @@ void get_request(CURL *curl, const char *url, dumb_string *recv) {
 	assert(curl_easy_perform(curl) == CURLE_OK);
 }
 
-#include "parser.h"
 // @TODO: memcpy array
 // @TODO: assert strdup
 // @TODO: safe_malloc, safe_realloc, NULL_FREE
 // @TODO: Custom allocator
 
-void eval(parse_node *root) {
-	printf("%s\n", root->token.buf);
-	if (root->children) {
+void eval(parse_node *root, array *stack) {
+	if (!root->children) {
+		double *i = malloc(sizeof(*i));
+		*i = strtof(root->token.buf, NULL);
+		add_array(stack, i);
+	} else {
 		for (size_t i = 0; i < root->children->size; ++i) {
-			eval(GET_ARRAY(root->children, i, parse_node *));
+			eval(GET_ARRAY(root->children, i, parse_node *), stack);
 		}
+
+		add(&stack, root->children->size);
 	}
 }
 
@@ -59,7 +64,16 @@ int main(void) {
 	free_array(tokens);
 	free(tokens);
 
-	eval(root);
+	array stack;
+	INIT_ARRAY(&stack, 32, sizeof(double *));
+	eval(root, &stack);
+
+	for (size_t i = 0; i < stack.size; ++i) {
+	        double *f = GET_ARRAY(&stack, i, double *);
+		printf("%f\n", *f);
+	}
+	
+	free_array(&stack);
 
 	free_parse_nodes(root);
 	
