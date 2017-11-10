@@ -47,4 +47,11 @@ void add_array(array *a, void *e) {
 	++a->size;
 }
 
+void remove_array(array *a, size_t i) {
+	void (*ff)(void *) = a->free_elem ? a->free_elem : free;
+	ff(a->elems[i]);
+	memmove(a->elems + i, a->elems + i + 1, a->size - i + 1 * sizeof(void *));
+	--a->size;
+}
+
 #endif
