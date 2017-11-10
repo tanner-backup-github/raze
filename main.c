@@ -34,9 +34,38 @@ void get_request(CURL *curl, const char *url, dumb_string *recv) {
 // @TODO: safe_malloc, safe_realloc, NULL_FREE
 // @TODO: Custom allocator
 
-/* void add(array *stack, size_t to_add) { */
-/* 	int x = 0; */
-/* } */
+typedef double (* Math)(double, double);
+
+double my_add(double x, double y) {
+	return x + y;
+}
+
+double my_sub(double x, double y) {
+	return x - y;
+}
+
+double my_mul(double x, double y) {
+	return x * y;
+}
+
+double my_div(double x, double y) {
+	return x / y;
+}
+
+Math lookup(const char *buf) {
+	if (strcmp(buf, "+") == 0) {
+		return my_add;
+	} else if (strcmp(buf, "-") == 0) {
+		return my_sub;
+	} else if (strcmp(buf, "*") == 0) {
+		return my_mul;
+	} else if (strcmp(buf, "/") == 0) {
+		return my_div;
+	}
+	printf("Undefined function!!!\n");
+	assert(false); // @TODO: panic
+	return NULL;
+}
 
 void eval(parse_node *root, array *stack) {
 	if (!root->children) {
@@ -48,33 +77,23 @@ void eval(parse_node *root, array *stack) {
 			eval(GET_ARRAY(root->children, i, parse_node *), stack);
 		}
 
-		/* add(&stack, root->children->size); */
+		if (strcmp(root->token.buf, "#ROOT#") == 0 && root->token.type == PUNCTUATION) {
+			return;
+		}
+		
+		Math op = lookup(root->token.buf);
+	
+		double res = *(double *) pop_array(stack);
+		for (size_t i = 1; i < root->children->size; ++i) {
+			res = op(res, *(double *) pop_array(stack));
+		}
+		double *st_res = malloc(sizeof(*st_res));
+		*st_res = res;
+		add_array(stack, st_res);
 	}
 }
 
-void free_thingy(int *t) {
-	printf("HERE!\n");
-	free(t);
-}
-
 int main(void) {
-
-	array test;
-	init_array_f(&test, 32, sizeof(int *), free_thingy);
-	int *x = malloc(sizeof(*x));
-	*x = 32;
-	add_array(&test, x);
-	int *v = malloc(sizeof(*v));
-	*v = 64;
-	add_array(&test, v);
-	int *xx = malloc(sizeof(*xx));
-	*xx = 5138;
-	add_array(&test, xx);
-	
-	remove_array(&test, 0);
-	printf("%d\n", *GET_ARRAY(&test, 0, int *));
-
-	free_array(&test);
 	
 	curl_global_init(CURL_GLOBAL_ALL);
 	
@@ -93,17 +112,16 @@ int main(void) {
 	array stack;
 	INIT_ARRAY(&stack, 32, sizeof(double *));
 	eval(root, &stack);
-
-	for (size_t i = 0; i < stack.size; ++i) {
-	        double *f = GET_ARRAY(&stack, i, double *);
-		printf("%f\n", *f);
-	}
+	
+	printf("%f\n", * (double *) pop_array(&stack));
 	
 	free_array(&stack);
 
 	free_parse_nodes(root);
 	
 	curl_global_cleanup();
+
+	return 0;
 	
 	assert(glfwInit());
 	

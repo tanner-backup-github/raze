@@ -54,4 +54,12 @@ void remove_array(array *a, size_t i) {
 	--a->size;
 }
 
+void *pop_array(array *a) {
+	size_t i = a->size - 1;
+	void *r = a->elems[i];
+	memmove(a->elems + i, a->elems + i + 1, a->size - i + 1 * sizeof(void *));
+	--a->size;
+	return r;
+}
+
 #endif
