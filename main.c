@@ -80,28 +80,20 @@ void eval(parse_node *root, array *stack) {
 		if (strcmp(root->token.buf, "#ROOT#") == 0 && root->token.type == PUNCTUATION) {
 			return;
 		}
-		
+
 		Math op = lookup(root->token.buf);
-	
-		double res = *(double *) pop_array(stack);
-		for (size_t i = 1; i < root->children->size; ++i) {
-			res = op(res, *(double *) pop_array(stack));
-		}
-		double *st_res = malloc(sizeof(*st_res));
-		*st_res = res;
-		add_array(stack, st_res);
 	}
 }
 
 int main(void) {
 	
-	curl_global_init(CURL_GLOBAL_ALL);
+	/* curl_global_init(CURL_GLOBAL_ALL); */
 	
-	CURL *curl = curl_easy_init();
+	/* CURL *curl = curl_easy_init(); */
 	
 	dumb_string s;
-        init_dumb_string(&s, "", 512);
-	get_request(curl, "https://razefiles.herokuapp.com/code", &s);
+        init_dumb_string(&s, read_entire_file("local_code"), 512);
+	/* get_request(curl, "https://razefiles.herokuapp.com/code", &s); */
 	array *tokens = tokenize(s.data, s.len);
 	free_dumb_string(&s);
 
@@ -113,13 +105,13 @@ int main(void) {
 	INIT_ARRAY(&stack, 32, sizeof(double *));
 	eval(root, &stack);
 	
-	printf("%f\n", * (double *) pop_array(&stack));
+	/* printf("%f\n", * (double *) pop_array(&stack)); */
 	
-	free_array(&stack);
+	/* free_array(&stack); */
 
 	free_parse_nodes(root);
 	
-	curl_global_cleanup();
+	/* curl_global_cleanup(); */
 
 	return 0;
 	
