@@ -179,7 +179,7 @@ int main(void) {
 	FT_Library ft;
 	FT_Init_FreeType(&ft);
 
-	Font *f = new_font(ft, "OpenSans-Regular.ttf", 64);
+	Font *f = new_font(ft, "razefiles/OpenSans-Regular.ttf", 64);
 
 	int32_t w = 0, h = 0;
 	GLuint tex_id = generate_text("The Web Sucks.", f, &w, &h);
