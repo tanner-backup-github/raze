@@ -112,8 +112,6 @@ int main(void) {
 	free_parse_nodes(root);
 	
 	/* curl_global_cleanup(); */
-
-	return 0;
 	
 	assert(glfwInit());
 	
@@ -176,7 +174,7 @@ int main(void) {
 	glClearColor(0.92, 0.92, 0.92, 1.0);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
-	glfwSwapInterval(-1);
+	/* glfwSwapInterval(-1); */
 
 	FT_Library ft;
 	FT_Init_FreeType(&ft);
