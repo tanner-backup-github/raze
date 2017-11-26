@@ -34,84 +34,18 @@ void get_request(CURL *curl, const char *url, dumb_string *recv) {
 // @TODO: safe_malloc, safe_realloc, NULL_FREE
 // @TODO: Custom allocator
 
-typedef double (* Math)(double, double);
-
-double my_add(double x, double y) {
-	return x + y;
-}
-
-double my_sub(double x, double y) {
-	return x - y;
-}
-
-double my_mul(double x, double y) {
-	return x * y;
-}
-
-double my_div(double x, double y) {
-	return x / y;
-}
-
-Math lookup(const char *buf) {
-	if (strcmp(buf, "+") == 0) {
-		return my_add;
-	} else if (strcmp(buf, "-") == 0) {
-		return my_sub;
-	} else if (strcmp(buf, "*") == 0) {
-		return my_mul;
-	} else if (strcmp(buf, "/") == 0) {
-		return my_div;
-	}
-	printf("Undefined function!!!\n");
-	assert(false); // @TODO: panic
-	return NULL;
-}
-
-void eval(parse_node *root, array *stack) {
-	if (!root->children) {
-		double *i = malloc(sizeof(*i));
-		*i = strtof(root->token.buf, NULL);
-		add_array(stack, i);
-	} else {
-		for (size_t i = 0; i < root->children->size; ++i) {
-			eval(GET_ARRAY(root->children, i, parse_node *), stack);
-		}
-
-		if (strcmp(root->token.buf, "#ROOT#") == 0 && root->token.type == PUNCTUATION) {
-			return;
-		}
-
-		Math op = lookup(root->token.buf);
-	}
-}
-
 int main(void) {
 	
-	/* curl_global_init(CURL_GLOBAL_ALL); */
+	curl_global_init(CURL_GLOBAL_ALL);
 	
-	/* CURL *curl = curl_easy_init(); */
-	
+	CURL *curl = curl_easy_init();
+
 	dumb_string s;
-        init_dumb_string(&s, read_entire_file("local_code"), 512);
-	/* get_request(curl, "https://razefiles.herokuapp.com/code", &s); */
-	array *tokens = tokenize(s.data, s.len);
-	free_dumb_string(&s);
-
-	parse_node *root = parse(tokens);
-	free_array(tokens);
-	free(tokens);
-
-	array stack;
-	INIT_ARRAY(&stack, 32, sizeof(double *));
-	eval(root, &stack);
+	init_dumb_string(&s, "", 256);
+	get_request(curl, "https://razefiles.herokuapp.com/code", &s);
+	printf("%s\n", s.buf);
 	
-	/* printf("%f\n", * (double *) pop_array(&stack)); */
-	
-	/* free_array(&stack); */
-
-	free_parse_nodes(root);
-	
-	/* curl_global_cleanup(); */
+	curl_global_cleanup();
 	
 	assert(glfwInit());
 	

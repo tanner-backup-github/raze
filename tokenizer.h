@@ -91,7 +91,7 @@ array *tokenize(const char *src, size_t src_len) {
 			add_array(tokens, t);
 		} else if (c == ')' && !in_str) {
 			if (buf.len) {				
-				char *copybuf = buf.data;
+				char *copybuf = buf.buf;
 				size_t copy_len = buf.len;
 				token_type type = IDENTIFIER;
 				if (is_str(copybuf)) {
@@ -112,7 +112,7 @@ array *tokenize(const char *src, size_t src_len) {
 			add_array(tokens, t);
 		} else if (c_space && !in_str && buf.len) {
 			token_type type = IDENTIFIER;
-			char *copybuf = buf.data;
+			char *copybuf = buf.buf;
 			size_t copy_len = buf.len;
 			if (is_str(copybuf)) {
 				type = STRING;
