@@ -1,5 +1,4 @@
-#ifndef GL_H__
-#define GL_H__
+#pragma once
 
 #include <assert.h>
 #include <inttypes.h>
@@ -49,7 +48,7 @@ Font *new_font(FT_Library ft, const char *path, size_t size) {
 	Font *font = malloc(sizeof(*font));
 	font->size = size;
 	font->tail_gap = (face->ascender >> 6) + (face->descender >> 6);
-	
+
 	// @TODO: unicode
 	init_array_f(&font->glyphs, 128, sizeof(MyGlyph *), (void *) free_myglyph);
 	FT_GlyphSlot glyph = face->glyph;
@@ -59,19 +58,19 @@ Font *new_font(FT_Library ft, const char *path, size_t size) {
 		MyGlyph *mg = malloc(sizeof(*mg));
 		mg->w = glyph->bitmap.width;
 		mg->h = glyph->bitmap.rows;
-		
+
 		mg->buffer = malloc(mg->w * mg->h);
 		memcpy(mg->buffer, glyph->bitmap.buffer, mg->w * mg->h);
-		
+
 		mg->bearingX = glyph->bitmap_left;
 		mg->bearingY = glyph->bitmap_top;
 		mg->advanceX = glyph->advance.x >> 6;
-		
+
 		add_array(&font->glyphs, mg);
 	}
-	
+
 	FT_Done_Face(face);
-	
+
 	return font;
 }
 
@@ -86,7 +85,7 @@ GLuint generate_text(const char *text, Font *font, int32_t *w, int32_t *h) {
 	GLuint tex_id;
 	glGenTextures(1, &tex_id);
 	glBindTexture(GL_TEXTURE_2D, tex_id);
-	
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -98,7 +97,7 @@ GLuint generate_text(const char *text, Font *font, int32_t *w, int32_t *h) {
 	int32_t base = 0;
 	for (size_t i = 0; text[i] != '\0'; ++i) {
 		MyGlyph *glyph = GET_ARRAY(&font->glyphs, (int) text[i], MyGlyph *);
-		
+
 		width += glyph->advanceX;
 		height = MAX(height, glyph->h + (glyph->h - glyph->bearingY)); /* */
 		base = MAX(base, glyph->h);
@@ -106,10 +105,10 @@ GLuint generate_text(const char *text, Font *font, int32_t *w, int32_t *h) {
 	height += font->tail_gap;
 
 	uint8_t *blank_for_artifacts = calloc(width * height, sizeof(uint8_t));
-	
+
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height,
 		     0, GL_RED, GL_UNSIGNED_BYTE, blank_for_artifacts);
-	
+
 	*w = width;
 	*h = height;
 
@@ -121,7 +120,7 @@ GLuint generate_text(const char *text, Font *font, int32_t *w, int32_t *h) {
 				GL_RED, GL_UNSIGNED_BYTE, glyph->buffer);
 		advx += glyph->advanceX;
 	}
-	
+
 	return tex_id;
 }
 
@@ -130,20 +129,20 @@ GLuint load_texture(const char *path, int32_t *w, int32_t *h) {
         assert(h);
 	int n;
 	uint8_t *data = stbi_load(path, w, h, &n, 4);
-	
+
 	GLuint tex_id;
 	glGenTextures(1, &tex_id);
 	glBindTexture(GL_TEXTURE_2D, tex_id);
-	
+
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
+
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, *w, *h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-	
+
 	stbi_image_free(data);
-	
+
 	return tex_id;
 }
 
@@ -159,18 +158,16 @@ GLuint make_shader_program(const char *vs_path, const char *fs_path) {
 	/* CHECK_SHADER("Vertex", vertex_shader); */
 	glCompileShader(fragment_shader);
 	/* CHECK_SHADER("Fragment", fragment_shader); */
-	
+
 	free(vs_code);
 	free(fs_code);
-	
+
 	GLuint shader = glCreateProgram();
 	glAttachShader(shader, vertex_shader);
 	glAttachShader(shader, fragment_shader);
 	glLinkProgram(shader);
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
-	
+
 	return shader;
 }
-
-#endif

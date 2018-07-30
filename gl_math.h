@@ -1,10 +1,9 @@
-#ifndef GL_MATH_H__
-#define GL_MATH_H__
+#pragma once
 
 #define IDENTITY_MATRIX { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 }
 
 void ortho(float m[16], float left, float right, float top, float bottom,
-	   float near, float far) {	
+	   float near, float far) {
 	m[0] = 2.0 / (right - left);
 	m[5] = 2.0 / (top - bottom);
 	m[10] = -2.0 / (far - near);
@@ -21,5 +20,3 @@ void model_matrix(float m[16], float x, float y, float w, float h, float r) {
 	m[12] = x + w / 2;
 	m[13] = y + h / 2;
 }
-
-#endif

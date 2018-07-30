@@ -1,5 +1,4 @@
-#ifndef TOKENIZER_H__
-#define TOKENIZER_H__
+#pragma once
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -75,7 +74,7 @@ array *tokenize(const char *src, size_t src_len) {
 	for (size_t i = 0; i < src_len; ++i) {
 		char c = src[i];
 		bool c_space = isspace(c);
-		
+
 		if (c == '"') { // @TODO: escape chars
 			in_str = !in_str;
 		} else if (c == '\n' && in_comment) {
@@ -85,12 +84,12 @@ array *tokenize(const char *src, size_t src_len) {
 			in_comment = true;
 			continue;
 		}
-		
+
 		if (c == '(' && !in_str) {
 			token *t = make_token(strdup("("), PUNCTUATION);
 			add_array(tokens, t);
 		} else if (c == ')' && !in_str) {
-			if (buf.len) {				
+			if (buf.len) {
 				char *copybuf = buf.buf;
 				size_t copy_len = buf.len;
 				token_type type = IDENTIFIER;
@@ -101,13 +100,13 @@ array *tokenize(const char *src, size_t src_len) {
 				} else if (is_num(copybuf)) {
 					type = INTEGER;
 				}
-				
+
 				token *t = make_token(strndup(copybuf, copy_len), type);
-				
+
 				add_array(tokens, t);
 				clear_dumb_string(&buf);
 			}
-			
+
 		        token *t = make_token(strdup(")"), PUNCTUATION);
 			add_array(tokens, t);
 		} else if (c_space && !in_str && buf.len) {
@@ -124,7 +123,7 @@ array *tokenize(const char *src, size_t src_len) {
 
 			token *t = make_token(strndup(copybuf, copy_len), type);
 			add_array(tokens, t);
-			
+
 		        clear_dumb_string(&buf);
 		}
 
@@ -136,5 +135,3 @@ array *tokenize(const char *src, size_t src_len) {
 
 	return tokens;
 }
-
-#endif

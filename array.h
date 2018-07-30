@@ -1,5 +1,4 @@
-#ifndef __ARRAY_H__
-#define __ARRAY_H__
+#pragma once
 
 #include <stdlib.h>
 #include <assert.h>
@@ -61,5 +60,3 @@ void *pop_array(array *a) {
 	--a->size;
 	return r;
 }
-
-#endif
